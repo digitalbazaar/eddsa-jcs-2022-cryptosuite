@@ -1,5 +1,5 @@
 /*!
- * Copyright (c) 2023-2024 Digital Bazaar, Inc. All rights reserved.
+ * Copyright (c) 2024 Digital Bazaar, Inc. All rights reserved.
  */
 import {expect} from 'chai';
 
@@ -18,9 +18,7 @@ import {
 import {
   Ed25519VerificationKey2020
 } from '@digitalbazaar/ed25519-verification-key-2020';
-import {
-  cryptosuite as eddsa2022CryptoSuite
-} from '../lib/index.js';
+import {createSignCryptosuite, createVerifyCryptosuite} from '../lib/index.js';
 
 import {loader} from './documentLoader.js';
 
@@ -29,17 +27,28 @@ const documentLoader = loader.build();
 describe('Eddsa2022Cryptosuite', () => {
   describe('exports', () => {
     it('it should have proper exports', async () => {
+      // sign cryptosuite
+      let eddsa2022CryptoSuite = createSignCryptosuite();
       should.exist(eddsa2022CryptoSuite);
-      eddsa2022CryptoSuite.name.should.equal('eddsa-rdfc-2022');
+      eddsa2022CryptoSuite.name.should.equal('eddsa-jcs-2022');
       eddsa2022CryptoSuite.requiredAlgorithm.should.equal('Ed25519');
       eddsa2022CryptoSuite.canonize.should.be.a('function');
       eddsa2022CryptoSuite.createVerifier.should.be.a('function');
+      eddsa2022CryptoSuite.createVerifyData.should.be.a('function');
+      // verify cryptosuite
+      eddsa2022CryptoSuite = createVerifyCryptosuite();
+      eddsa2022CryptoSuite.name.should.equal('eddsa-jcs-2022');
+      eddsa2022CryptoSuite.requiredAlgorithm.should.equal('Ed25519');
+      eddsa2022CryptoSuite.canonize.should.be.a('function');
+      eddsa2022CryptoSuite.createVerifier.should.be.a('function');
+      eddsa2022CryptoSuite.createVerifyData.should.be.a('function');
     });
   });
 
   describe('canonize()', () => {
-    it('should canonize using RDFC-1.0 w/ n-quads', async () => {
+    it('should canonize using JCS', async () => {
       const unsignedCredential = {...credential};
+      const eddsa2022CryptoSuite = createSignCryptosuite();
 
       let result;
       let error;
@@ -53,12 +62,7 @@ describe('Eddsa2022Cryptosuite', () => {
       expect(error).to.not.exist;
       expect(result).to.exist;
       /* eslint-disable max-len */
-      const expectedResult = `<http://example.edu/credentials/1872> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <https://schema.org#AlumniCredential> .
-<http://example.edu/credentials/1872> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <https://www.w3.org/2018/credentials#VerifiableCredential> .
-<http://example.edu/credentials/1872> <https://www.w3.org/2018/credentials#credentialSubject> <https://example.edu/students/alice> .
-<http://example.edu/credentials/1872> <https://www.w3.org/2018/credentials#issuanceDate> "2010-01-01T19:23:24Z"^^<http://www.w3.org/2001/XMLSchema#dateTime> .
-<http://example.edu/credentials/1872> <https://www.w3.org/2018/credentials#issuer> <https://example.edu/issuers/565049> .
-<https://example.edu/students/alice> <https://schema.org#alumniOf> "Example University" .\n`;
+      const expectedResult = `{"@context":["https://www.w3.org/2018/credentials/v1",{"AlumniCredential":"https://schema.org#AlumniCredential","alumniOf":"https://schema.org#alumniOf"},"https://w3id.org/security/data-integrity/v2"],"credentialSubject":{"alumniOf":"Example University","id":"https://example.edu/students/alice"},"id":"http://example.edu/credentials/1872","issuanceDate":"2010-01-01T19:23:24Z","issuer":"https://example.edu/issuers/565049","type":["VerifiableCredential","AlumniCredential"]}`;
       /* eslint-enable max-len */
       result.should.equal(expectedResult);
     });
@@ -69,6 +73,7 @@ describe('Eddsa2022Cryptosuite', () => {
       let verifier;
       let error;
       try {
+        const eddsa2022CryptoSuite = createVerifyCryptosuite();
         verifier = await eddsa2022CryptoSuite.createVerifier({
           verificationMethod: {...ed25519MultikeyKeyPair}
         });
@@ -90,6 +95,7 @@ describe('Eddsa2022Cryptosuite', () => {
         controller
       });
       try {
+        const eddsa2022CryptoSuite = createVerifyCryptosuite();
         verifier = await eddsa2022CryptoSuite.createVerifier({
           verificationMethod: keyPair2020
         });
@@ -111,6 +117,7 @@ describe('Eddsa2022Cryptosuite', () => {
         controller
       });
       try {
+        const eddsa2022CryptoSuite = createVerifyCryptosuite();
         verifier = await eddsa2022CryptoSuite.createVerifier({
           verificationMethod: keyPair2018
         });
@@ -132,6 +139,7 @@ describe('Eddsa2022Cryptosuite', () => {
       });
       keyPair2018.type = 'BadKeyType';
       try {
+        const eddsa2022CryptoSuite = createVerifyCryptosuite();
         await eddsa2022CryptoSuite.createVerifier({
           verificationMethod: keyPair2018
         });
@@ -149,6 +157,7 @@ describe('Eddsa2022Cryptosuite', () => {
 
       const keyPair = await Ed25519Multikey.from({...ed25519MultikeyKeyPair});
       const date = '2022-09-06T21:29:24Z';
+      const eddsa2022CryptoSuite = createSignCryptosuite();
       const suite = new DataIntegrityProof({
         signer: keyPair.signer(), date, cryptosuite: eddsa2022CryptoSuite
       });
@@ -158,66 +167,73 @@ describe('Eddsa2022Cryptosuite', () => {
         purpose: new AssertionProofPurpose(),
         documentLoader
       });
+
       expect(signedCredential).to.have.property('proof');
-      expect(signedCredential.proof['@context']).to.not.exist;
+      expect(signedCredential.proof['@context']).to.exist;
       expect(signedCredential.proof.proofValue).to
-        .equal('z4uwHCobmxKqQfZb7i8QRnNR9J4TR6u4Wkm4DB3ms337gfSpL4UwhTD7KKdPj' +
-          'yAaVJQ4y896FEnB1Vz3uEz14jWoC');
+        .equal('z3aKfEmARJBuiiBcmGtzPh5ZHaGm9EAehkyVRDJGRxnTJQwqpdoktM6CD8aJ' +
+          'ii1RobA34gjVcdSQ7cURYcXtEkav2');
     });
 
-    it('should fail to sign with undefined term', async () => {
-      const unsignedCredential = JSON.parse(JSON.stringify(credential));
-      unsignedCredential.undefinedTerm = 'foo';
+    it(
+      'should still sign even with undefined term as JCS does not check terms',
+      async () => {
+        const unsignedCredential = JSON.parse(JSON.stringify(credential));
+        unsignedCredential.undefinedTerm = 'foo';
 
-      const keyPair = await Ed25519Multikey.from({...ed25519MultikeyKeyPair});
-      const date = '2022-09-06T21:29:24Z';
-      const suite = new DataIntegrityProof({
-        signer: keyPair.signer(), date, cryptosuite: eddsa2022CryptoSuite
+        const keyPair = await Ed25519Multikey.from({...ed25519MultikeyKeyPair});
+        const date = '2022-09-06T21:29:24Z';
+        const eddsa2022CryptoSuite = createSignCryptosuite();
+        const suite = new DataIntegrityProof({
+          signer: keyPair.signer(), date, cryptosuite: eddsa2022CryptoSuite
+        });
+
+        let error;
+        try {
+          await jsigs.sign(unsignedCredential, {
+            suite,
+            purpose: new AssertionProofPurpose(),
+            documentLoader
+          });
+        } catch(e) {
+          error = e;
+        }
+        expect(error).to.not.exist;
       });
 
-      let error;
-      try {
-        await jsigs.sign(unsignedCredential, {
-          suite,
-          purpose: new AssertionProofPurpose(),
-          documentLoader
+    it(
+      'should still sign even with relative type URL as JCS does not check ' +
+        'relative type URL',
+      async () => {
+        const unsignedCredential = JSON.parse(JSON.stringify(credential));
+        unsignedCredential.type.push('UndefinedType');
+
+        const keyPair = await Ed25519Multikey.from({...ed25519MultikeyKeyPair});
+        const date = '2022-09-06T21:29:24Z';
+        const eddsa2022CryptoSuite = createSignCryptosuite();
+        const suite = new DataIntegrityProof({
+          signer: keyPair.signer(), date, cryptosuite: eddsa2022CryptoSuite
         });
-      } catch(e) {
-        error = e;
-      }
-      expect(error).to.exist;
-      expect(error.name).to.equal('jsonld.ValidationError');
-    });
 
-    it('should fail to sign with relative type URL', async () => {
-      const unsignedCredential = JSON.parse(JSON.stringify(credential));
-      unsignedCredential.type.push('UndefinedType');
-
-      const keyPair = await Ed25519Multikey.from({...ed25519MultikeyKeyPair});
-      const date = '2022-09-06T21:29:24Z';
-      const suite = new DataIntegrityProof({
-        signer: keyPair.signer(), date, cryptosuite: eddsa2022CryptoSuite
+        let error;
+        try {
+          await jsigs.sign(unsignedCredential, {
+            suite,
+            purpose: new AssertionProofPurpose(),
+            documentLoader
+          });
+        } catch(e) {
+          error = e;
+        }
+        expect(error).to.not.exist;
       });
-
-      let error;
-      try {
-        await jsigs.sign(unsignedCredential, {
-          suite,
-          purpose: new AssertionProofPurpose(),
-          documentLoader
-        });
-      } catch(e) {
-        error = e;
-      }
-      expect(error).to.exist;
-      expect(error.name).to.equal('jsonld.ValidationError');
-    });
 
     it('should fail to sign with incorrect signer algorithm', async () => {
       const keyPair = await Ed25519Multikey.from({...ed25519MultikeyKeyPair});
       const date = '2022-09-06T21:29:24Z';
       const signer = keyPair.signer();
       signer.algorithm = 'wrong-algorithm';
+      const eddsa2022CryptoSuite = createSignCryptosuite();
 
       let error;
       try {
@@ -244,6 +260,7 @@ describe('Eddsa2022Cryptosuite', () => {
 
       const keyPair = await Ed25519Multikey.from({...ed25519MultikeyKeyPair});
       const date = '2022-09-06T21:29:24Z';
+      const eddsa2022CryptoSuite = createSignCryptosuite();
       const suite = new DataIntegrityProof({
         signer: keyPair.signer(), date, cryptosuite: eddsa2022CryptoSuite
       });
@@ -256,6 +273,7 @@ describe('Eddsa2022Cryptosuite', () => {
     });
 
     it('should verify a document', async () => {
+      const eddsa2022CryptoSuite = createVerifyCryptosuite();
       const suite = new DataIntegrityProof({cryptosuite: eddsa2022CryptoSuite});
       const result = await jsigs.verify(signedCredential, {
         suite,
@@ -267,6 +285,7 @@ describe('Eddsa2022Cryptosuite', () => {
 
     it('should fail verification if "proofValue" is not string',
       async () => {
+        const eddsa2022CryptoSuite = createVerifyCryptosuite();
         const suite = new DataIntegrityProof({
           cryptosuite: eddsa2022CryptoSuite
         });
@@ -283,14 +302,12 @@ describe('Eddsa2022Cryptosuite', () => {
 
         const {error} = result.results[0];
         expect(result.verified).to.be.false;
-        expect(error.name).to.equal('TypeError');
-        expect(error.message).to.equal(
-          'The proof does not include a valid "proofValue" property.'
-        );
+        expect(error.name).to.equal('Error');
       });
 
     it('should fail verification if "proofValue" is not given',
       async () => {
+        const eddsa2022CryptoSuite = createVerifyCryptosuite();
         const suite = new DataIntegrityProof({
           cryptosuite: eddsa2022CryptoSuite
         });
@@ -308,14 +325,12 @@ describe('Eddsa2022Cryptosuite', () => {
         const {error} = result.results[0];
 
         expect(result.verified).to.be.false;
-        expect(error.name).to.equal('TypeError');
-        expect(error.message).to.equal(
-          'The proof does not include a valid "proofValue" property.'
-        );
+        expect(error.name).to.equal('Error');
       });
 
     it('should fail verification if proofValue string does not start with "z"',
       async () => {
+        const eddsa2022CryptoSuite = createVerifyCryptosuite();
         const suite = new DataIntegrityProof({
           cryptosuite: eddsa2022CryptoSuite
         });
@@ -334,11 +349,11 @@ describe('Eddsa2022Cryptosuite', () => {
 
         expect(result.verified).to.be.false;
         expect(errors[0].name).to.equal('Error');
-        expect(errors[0].message).to.include('base58btc');
       });
 
     it('should fail verification if proof type is not DataIntegrityProof',
       async () => {
+        const eddsa2022CryptoSuite = createVerifyCryptosuite();
         const suite = new DataIntegrityProof({
           cryptosuite: eddsa2022CryptoSuite
         });
