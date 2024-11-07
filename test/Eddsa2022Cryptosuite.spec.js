@@ -7,6 +7,7 @@ import jsigs from 'jsonld-signatures';
 const {purposes: {AssertionProofPurpose}} = jsigs;
 
 import * as Ed25519Multikey from '@digitalbazaar/ed25519-multikey';
+import {createSignCryptosuite, createVerifyCryptosuite} from '../lib/index.js';
 import {
   credential,
   ed25519MultikeyKeyPair
@@ -18,7 +19,6 @@ import {
 import {
   Ed25519VerificationKey2020
 } from '@digitalbazaar/ed25519-verification-key-2020';
-import {createSignCryptosuite, createVerifyCryptosuite} from '../lib/index.js';
 
 import {loader} from './documentLoader.js';
 
