@@ -13,6 +13,10 @@
   "files": [
     "lib/**/*.js"
   ],
+  "browser": {
+    "crypto": false,
+    "./lib/sha.js": "./lib/sha-browser.js"
+  },
   "dependencies": {
     "@digitalbazaar/ed25519-multikey": "^1.3.0",
     "canonicalize": "^2.0.0"
