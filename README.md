@@ -1,10 +1,10 @@
-# EdDSA RDFC 2022 Data Integrity Cryptosuite _(@digitalbazaar/eddsa-rdfc-2022-cryptosuite)_
+# EdDSA JCS 2022 Data Integrity Cryptosuite _(@digitalbazaar/eddsa-jcs-2022-cryptosuite)_
 
-[![Build status](https://img.shields.io/github/actions/workflow/status/digitalbazaar/eddsa-rdfc-2022-cryptosuite/main.yml)](https://github.com/digitalbazaar/eddsa-rdfc-2022-cryptosuite/actions?query=workflow%3A%22Node.js+CI%22)
-[![Coverage status](https://img.shields.io/codecov/c/github/digitalbazaar/eddsa-rdfc-2022-cryptosuite)](https://codecov.io/gh/digitalbazaar/eddsa-rdfc-2022-cryptosuite)
-[![NPM Version](https://img.shields.io/npm/v/@digitalbazaar/eddsa-rdfc-2022-cryptosuite.svg)](https://npm.im/@digitalbazaar/eddsa-rdfc-2022-cryptosuite)
+[![Build status](https://img.shields.io/github/actions/workflow/status/digitalbazaar/eddsa-jcs-2022-cryptosuite/main.yml)](https://github.com/digitalbazaar/eddsa-jcs-2022-cryptosuite/actions?query=workflow%3A%22Node.js+CI%22)
+[![Coverage status](https://img.shields.io/codecov/c/github/digitalbazaar/eddsa-jcs-2022-cryptosuite)](https://codecov.io/gh/digitalbazaar/eddsa-jcs-2022-cryptosuite)
+[![NPM Version](https://img.shields.io/npm/v/@digitalbazaar/eddsa-jcs-2022-cryptosuite.svg)](https://npm.im/@digitalbazaar/eddsa-jcs-2022-cryptosuite)
 
-> EdDSA 2022 Data Integrity Cryptosuite for use with jsonld-signatures.
+> EdDSA 2022 Data Integrity Cryptosuite.
 
 ## Table of Contents
 
@@ -35,14 +35,14 @@ TBD
 To install from NPM:
 
 ```
-npm install @digitalbazaar/eddsa-rdfc-2022-cryptosuite
+npm install @digitalbazaar/eddsa-jcs-2022-cryptosuite
 ```
 
 To install locally (for development):
 
 ```
-git clone https://github.com/digitalbazaar/eddsa-rdfc-2022-cryptosuite.git
-cd eddsa-rdfc-2022-cryptosuite
+git clone https://github.com/digitalbazaar/eddsa-jcs-2022-cryptosuite.git
+cd eddsa-jcs-2022-cryptosuite
 npm install
 ```
 
@@ -54,8 +54,7 @@ a verifiable credential using this library:
 ```javascript
 import * as Ed25519Multikey from '@digitalbazaar/ed25519-multikey';
 import {DataIntegrityProof} from '@digitalbazaar/data-integrity';
-import {cryptosuite as eddsaRdfc2022CryptoSuite} from
-  '@digitalbazaar/eddsa-rdfc-2022-cryptosuite';
+import {createSignCryptosuite} from '@digitalbazaar/eddsa-jcs-2022-cryptosuite';
 import jsigs from 'jsonld-signatures';
 const {purposes: {AssertionProofPurpose}} = jsigs;
 
@@ -107,8 +106,9 @@ const controllerDoc = {
 addDocumentToLoader({url: controllerDoc.id, document: controllerDoc});
 
 // create suite
+const eddsaJcs2022CryptoSuite = createSignCryptosuite();
 const suite = new DataIntegrityProof({
-  signer: keyPair.signer(), cryptosuite: eddsaRdfc2022CryptoSuite
+  signer: keyPair.signer(), cryptosuite: eddsaJcs2022CryptoSuite
 });
 
 // create signed credential
@@ -143,9 +143,17 @@ const signedCredential = await jsigs.sign(unsignedCredential, {
     "type": "DataIntegrityProof",
     "created": "2022-09-06T21:29:24Z",
     "verificationMethod": "https://example.edu/issuers/565049#z6MkwXG2WjeQnNxSoynSGYU8V9j3QzP3JSqhdmkHc6SaVWoT",
-    "cryptosuite": "eddsa-rdfc-2022",
+    "cryptosuite": "eddsa-jcs-2022",
     "proofPurpose": "assertionMethod",
-    "proofValue": "z4uwHCobmxKqQfZb7i8QRnNR9J4TR6u4Wkm4DB3ms337gfSpL4UwhTD7KKdPjyAaVJQ4y896FEnB1Vz3uEz14jWoC"
+    "@context": [
+      "https://www.w3.org/2018/credentials/v1",
+      {
+        "AlumniCredential": "https://schema.org#AlumniCredential",
+        "alumniOf": "https://schema.org#alumniOf"
+      },
+      "https://w3id.org/security/data-integrity/v2"
+    ],
+    "proofValue": "z3aKfEmARJBuiiBcmGtzPh5ZHaGm9EAehkyVRDJGRxnTJQwqpdoktM6CD8aJii1RobA34gjVcdSQ7cURYcXtEkav2"
   }
 }
 ```
