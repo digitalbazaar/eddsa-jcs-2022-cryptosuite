@@ -1,6 +1,6 @@
 {
   "name": "@digitalbazaar/eddsa-jcs-2022-cryptosuite",
-  "version": "0.0.1-0",
+  "version": "1.0.0",
   "description": "An EdDSA-JCS-2022 Data Integrity cryptosuite.",
   "homepage": "https://github.com/digitalbazaar/eddsa-jcs-2022-cryptosuite",
   "repository": {
